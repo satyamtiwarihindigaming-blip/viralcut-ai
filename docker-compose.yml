@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: viralcut_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: viralcut
+      POSTGRES_PASSWORD: viralcutpassword
+      POSTGRES_DB: viralcut_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: viralcut_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: viralcut_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+asyncpg://viralcut:viralcutpassword@postgres:5432/viralcut_db
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - SECRET_KEY=${SECRET_KEY:-viralcut_super_secret_production_key_32_chars}
+      - STORAGE_PROVIDER=local
+    volumes:
+      - media_storage:/app/storage
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: viralcut_worker
+    restart: always
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-c", "2"]
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+asyncpg://viralcut:viralcutpassword@postgres:5432/viralcut_db
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - SECRET_KEY=${SECRET_KEY:-viralcut_super_secret_production_key_32_chars}
+      - STORAGE_PROVIDER=local
+    volumes:
+      - media_storage:/app/storage
+    depends_on:
+      - backend
+      - redis
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: viralcut_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_storage:

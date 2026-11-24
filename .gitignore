@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv
+venv/
+ENV/
+
+# Node & Frontend
+node_modules/
+.pnp
+.pnp.js
+coverage/
+build/
+.npm
+dist/
+dist-ssr/
+*.local
+
+# Environment variables and secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Media files, cache, and processing artifacts
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/exports/*
+!backend/exports/.gitkeep
+backend/temp/*
+!backend/temp/.gitkeep
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+*.ts
+*.m4a
+*.wav
+*.mp3
+
+# SQLite DB
+*.sqlite3
+*.db
+backend/viralcut.db
+
+# Faster Whisper & Torch cache
+models/
+.cache/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

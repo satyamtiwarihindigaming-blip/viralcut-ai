@@ -1,0 +1,39 @@
+# VIRALCUT AI — Backend Dependencies
+# Web Framework & Core
+fastapi>=0.115.5
+uvicorn[standard]>=0.32.1
+python-multipart>=0.0.17
+pydantic>=2.11.0
+email-validator>=2.0.0
+pydantic-settings>=2.6.1
+httpx>=0.28.0
+aiofiles>=24.1.0
+
+# Official Google GenAI SDK
+google-genai>=1.0.0
+
+# Audio & Computer Vision
+opencv-python-headless>=4.9.0,<5.0.0
+opencv-python>=4.9.0,<5.0.0
+scenedetect[opencv]>=0.6.4
+faster-whisper>=1.1.0
+
+# Database & Async ORM
+sqlalchemy>=2.0.36
+greenlet>=3.0.0
+aiosqlite>=0.20.0
+asyncpg>=0.30.0
+
+# Security & Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.2.1
+
+# Background Tasks & Cloud Storage
+celery>=5.4.0
+redis>=5.2.0
+boto3>=1.35.68
+
+# Utilities
+python-dotenv>=1.0.1
+rich>=13.9.4
