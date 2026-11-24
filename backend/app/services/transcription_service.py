@@ -35,15 +35,40 @@ class TranscriptionService:
 
         model = self._get_model()
 
-        # Run transcription with word timestamps enabled
-        segments_gen, info = model.transcribe(
-            video_path,
-            language=language if language and language != "auto" else None,
-            word_timestamps=True,
-            vad_filter=True, # Voice Activity Detection filters out silence
-            vad_parameters=dict(min_silence_duration_ms=500),
-            beam_size=5
-        )
+        # Demux 16kHz mono audio WAV first for ultra-fast Whisper transcription
+        import subprocess
+        audio_wav_path = f"{os.path.splitext(video_path)[0]}_temp_audio.wav"
+        demux_cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path,
+            "-vn", "-ar", "16000", "-ac", "1",
+            "-c:a", "pcm_s16le",
+            audio_wav_path
+        ]
+        input_media = video_path
+        try:
+            subprocess.run(demux_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            if os.path.exists(audio_wav_path):
+                input_media = audio_wav_path
+        except Exception:
+            input_media = video_path
+
+        try:
+            # Run transcription with word timestamps enabled
+            segments_gen, info = model.transcribe(
+                input_media,
+                language=language if language and language != "auto" else None,
+                word_timestamps=True,
+                vad_filter=True, # Voice Activity Detection filters out silence
+                vad_parameters=dict(min_silence_duration_ms=500),
+                beam_size=1
+            )
+        finally:
+            if input_media != video_path and os.path.exists(audio_wav_path):
+                try:
+                    os.remove(audio_wav_path)
+                except Exception:
+                    pass
 
         detected_language = info.language
         language_probability = round(info.language_probability, 3)
