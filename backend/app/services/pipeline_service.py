@@ -150,7 +150,8 @@ class PipelineService:
                         start_t,
                         end_t
                     )
-                framing = candidate.get("framing") or tracking_result.get("recommended_layout", "speaker_tracking")
+                framing = candidate.get("framing") or "three_zone_motion"
+                caption_style = candidate.get("caption_style") or "karaoke"
 
                 # Extract word-level subtitles for this segment
                 subtitles = transcription_service.extract_clip_subtitles(
@@ -163,7 +164,7 @@ class PipelineService:
                 thumb_filename = f"thumb_{project_id}_{idx + 1}_{uuid.uuid4().hex[:8]}.jpg"
                 thumb_path = str(settings.STORAGE_LOCAL_DIR / "clips" / thumb_filename)
 
-                # Direct Stream Render Clip in FFmpeg
+                # Direct Stream Render Clip in FFmpeg with Three-Zone Kinetic Motion
                 render_result = await asyncio.to_thread(
                     video_renderer_service.render_clip,
                     source_video_path=video_path,
@@ -179,7 +180,7 @@ class PipelineService:
                     trajectory=tracking_result.get("trajectory"),
                     subtitles=subtitles,
                     hook_text=candidate.get("hook"),
-                    caption_style="bold_viral"
+                    caption_style=caption_style
                 )
 
                 # Generate thumbnail from rendered clip

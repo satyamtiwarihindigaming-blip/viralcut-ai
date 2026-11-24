@@ -17,11 +17,22 @@ class SmartReframerService:
         in_height: int,
         out_res: str = "4K",
         trajectory: Optional[List[Dict[str, float]]] = None,
-        manual_crop: Optional[Dict[str, Any]] = None
+        manual_crop: Optional[Dict[str, Any]] = None,
+        duration: float = 15.0,
+        show_progress_bar: bool = True
     ) -> str:
         """
-        Builds the FFmpeg -filter_complex command string for the selected framing mode.
-        Ensures high-quality Lanczos scaling and exact 9:16 vertical frame framing.
+        Builds the FFmpeg -filter_complex command string.
+        
+        MODES:
+        - 'three_zone_motion' (DEFAULT): Trending 3-zone vertical composition.
+           Preserves 100% of the original video in the middle zone (fit-contain, NO cropping),
+           with stylized blurred background filling top/bottom, subtle border framing, and progress bar.
+        - 'full_frame_blurred': Minimalist full frame in center with blurred background.
+        - 'speaker_tracking': Dynamic horizontal focal tracking on speaker face.
+        - 'split_screen': 2-person stacked split view for podcasts.
+        - 'stacked_screen': 3-panel stacked reaction layout.
+        - 'manual': Custom user coordinates.
         """
         out_w, out_h = self.RESOLUTION_MAP.get(out_res, (2160, 3840))
 
@@ -30,25 +41,62 @@ class SmartReframerService:
         if trajectory and len(trajectory) > 0:
             avg_focal_x = sum(t.get("focal_x", in_width / 2.0) for t in trajectory) / len(trajectory)
 
-        # 1. Blurred Background Composition (Safe, professional wide presentation)
-        if framing_mode == "blurred_bg":
-            # Background: scaled to fill out_h, cropped to 9:16, heavy boxblur
-            # Foreground: scaled to fit width with clean border / drop-shadow
+        dur_safe = max(1.0, duration)
+        pb_height = max(6, int(out_h * 0.003)) # 10px in 4K, 6px in 1080p
+
+        # ========================================================
+        # 1. THREE-ZONE MOTION REELS COMPOSITION (DEFAULT & TRENDING)
+        # ========================================================
+        if framing_mode in ["three_zone_motion", "full_frame_blurred", "default", "full_frame"]:
+            # Calculate proportional dimensions for middle zone fit-contain
+            aspect_in = in_width / in_height if in_height > 0 else 1.778
+            aspect_out = out_w / out_h # 9/16 = 0.5625
+
+            if aspect_in >= aspect_out:
+                # Landscape or square: fit to width out_w
+                fg_w = out_w
+                fg_h = int(out_w / aspect_in)
+                # Ensure even dimensions for encoder
+                if fg_h % 2 != 0:
+                    fg_h -= 1
+            else:
+                # Vertical source: fit to height
+                fg_h = int(out_h * 0.65) # keep safe margins for top/bottom zones
+                fg_w = int(fg_h * aspect_in)
+                if fg_w % 2 != 0:
+                    fg_w -= 1
+
+            fg_y = int((out_h - fg_h) / 2)
+
+            # Background: enlarged to fill canvas, heavy blur + dark overlay for contrast
+            # Foreground: clean Lanczos scaling of the original complete frame
+            # Sleek 2px top & bottom separation lines framing the middle video
             filter_str = (
                 f"[0:v]scale={out_w}:{out_h}:force_original_aspect_ratio=increase:flags=lanczos,"
                 f"crop={out_w}:{out_h},"
-                f"boxblur=20:5[bg];"
-                f"[0:v]scale={out_w}:-2:flags=lanczos[fg];"
-                f"[bg][fg]overlay=(W-w)/2:(H-h)/2[v]"
+                f"boxblur=25:5,"
+                f"drawbox=x=0:y=0:w={out_w}:h={out_h}:color=black@0.45:t=fill[bg];"
+                f"[0:v]scale={fg_w}:{fg_h}:flags=lanczos[fg_clean];"
+                f"[fg_clean]drawbox=x=0:y=0:w={fg_w}:h=2:color=white@0.25:t=fill,"
+                f"drawbox=x=0:y={fg_h - 2}:w={fg_w}:h=2:color=white@0.25:t=fill[fg];"
+                f"[bg][fg]overlay=(W-w)/2:{fg_y}[v_base]"
             )
+
+            # Animated top progress bar indicator line (moves smoothly from 0 to 100% with time)
+            if show_progress_bar:
+                filter_str += (
+                    f";[v_base]drawbox=x=0:y=0:w='min(iw, iw*(t/{dur_safe}))':h={pb_height}:color=0x8B5CF6@0.95:t=fill[v]"
+                )
+            else:
+                filter_str += ";[v_base]null[v]"
+
             return filter_str
 
-        # 2. Two-Person Split Screen (Podcast / Interview / Debate)
+        # ========================================================
+        # 2. TWO-PERSON SPLIT SCREEN (Podcasts / Interviews)
+        # ========================================================
         elif framing_mode == "split_screen":
-            # Target top half: out_w x (out_h/2), bottom half: out_w x (out_h/2)
             half_h = int(out_h / 2)
-            # Left speaker crop (left 50% of 16:9 input)
-            # Right speaker crop (right 50% of 16:9 input)
             crop_w = int(in_height * (9 / 16))
             left_x = max(0, int(in_width * 0.25 - crop_w / 2))
             right_x = min(in_width - crop_w, int(in_width * 0.75 - crop_w / 2))
@@ -59,12 +107,13 @@ class SmartReframerService:
                 f"[0:v]crop={crop_w}:{in_height}:{right_x}:0,"
                 f"scale={out_w}:{half_h}:flags=lanczos[bot];"
                 f"[top][bot]vstack=inputs=2[v_stack];"
-                # Draw a sleek subtle 4px separator line at midpoint
                 f"[v_stack]drawbox=x=0:y={half_h - 2}:w={out_w}:h=4:color=white@0.3:t=fill[v]"
             )
             return filter_str
 
-        # 3. Multiple-Speaker Stacked Screen (Reaction / 3-panel podcast)
+        # ========================================================
+        # 3. MULTIPLE-SPEAKER STACKED SCREEN (3-Panel Reaction)
+        # ========================================================
         elif framing_mode == "stacked_screen":
             third_h = int(out_h / 3)
             crop_w = int(in_height * (9 / 16))
@@ -80,7 +129,9 @@ class SmartReframerService:
             )
             return filter_str
 
-        # 4. Manual Crop (User defined coordinates in Video Editor)
+        # ========================================================
+        # 4. MANUAL CROP
+        # ========================================================
         elif framing_mode == "manual" and manual_crop:
             mx = int(manual_crop.get("x", 0))
             my = int(manual_crop.get("y", 0))
@@ -92,9 +143,10 @@ class SmartReframerService:
             )
             return filter_str
 
-        # 5. Single-Speaker Smart Tracking & Dynamic / Context-Aware Crop (Default)
-        else:
-            # Crop 9:16 vertical slice from landscape video
+        # ========================================================
+        # 5. DYNAMIC SPEAKER TRACKING (Vertical Slice)
+        # ========================================================
+        else: # speaker_tracking / dynamic_tracking
             crop_w = int(in_height * (9 / 16))
             if crop_w > in_width:
                 crop_w = in_width
@@ -104,7 +156,6 @@ class SmartReframerService:
             else:
                 crop_h = in_height
                 crop_y = 0
-                # Calculate safe focal X (keep subject in frame, clamped to margins)
                 crop_x = int(avg_focal_x - (crop_w / 2))
                 crop_x = max(0, min(in_width - crop_w, crop_x))
 

@@ -96,12 +96,20 @@ CRITICAL RULES:
 2. DO NOT cut sentences in the middle. Choose natural conversation start and end boundaries.
 3. Every clip must have a clear hook in the first 3 seconds to stop viewers scrolling.
 4. User Focus / Guidance: "{user_guide}"
-5. Choose the optimal framing layout based on scene context:
-   - "speaker_tracking": standard single person speaking or dominant speaker
-   - "split_screen": two people having a dialogue/debate
-   - "stacked_screen": multi-person podcast or reaction setup
-   - "blurred_bg": wide landscape context where full screen must be preserved
-   - "dynamic_tracking": fast moving object or speaker
+5. Choose the optimal 9:16 layout:
+   - "three_zone_motion" (DEFAULT): Full original video preserved in center zone (fit-contain, NO cropping), with animated hook top zone, blurred background fill, and kinetic bottom captions.
+   - "speaker_tracking": Tight camera follow on active speaker.
+   - "split_screen": Two people having a dialogue/debate (top/bottom).
+   - "stacked_screen": Multi-person podcast or reaction setup.
+6. Select the best kinetic caption animation style:
+   - "karaoke": Word-by-word active highlight with smooth scale bounce.
+   - "word_pop": Active word pops out with dynamic zoom emphasis.
+   - "bouncing": Energetic bouncing active word.
+   - "bold_podcast": High-contrast bold viral podcast captions.
+   - "neon_glow": Vibrant cyber neon glow.
+   - "minimal_clean": Elegant sans-serif minimal captions.
+   - "keyword_highlight": Emphasizes emotional power words and numbers.
+   - "premium_social": Hormozi / MrBeast style bold social media typography.
 
 TRANSCRIPT WITH TIMESTAMPS:
 {transcript_text}
@@ -114,10 +122,12 @@ Return a valid JSON array of objects. Do NOT include markdown backticks like ```
     "end_time": 45.0,
     "title": "Catchy 3-5 Word Title",
     "hook": "Attention-grabbing opening hook text",
-    "category": "educational",
+    "category": "gaming",
     "viral_score": 92,
     "reason": "Clear narrative arc with an unexpected conclusion",
-    "framing": "speaker_tracking"
+    "framing": "three_zone_motion",
+    "caption_style": "karaoke",
+    "keywords_to_highlight": ["SECRET", "TRUTH", "10X"]
   }}
 ]
 """

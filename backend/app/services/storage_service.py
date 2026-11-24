@@ -71,7 +71,9 @@ class StorageService:
             except ValueError:
                 return f"/storage/{os.path.basename(file_path_or_key)}"
 
-        clean_key = file_path_or_key.replace("\\", "/")
+        clean_key = file_path_or_key.replace("\\", "/").lstrip("/")
+        if clean_key.startswith("storage/"):
+            clean_key = clean_key[len("storage/"):]
         return f"/storage/{clean_key}"
 
 storage_service = StorageService()

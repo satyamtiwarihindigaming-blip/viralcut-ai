@@ -11,7 +11,8 @@ class VideoMetadataService:
 
     def get_metadata(self, file_path: str) -> Dict[str, Any]:
         """Extract complete video and audio stream metadata using ffprobe."""
-        if not os.path.exists(file_path):
+        is_url = str(file_path).startswith("http://") or str(file_path).startswith("https://")
+        if not is_url and not os.path.exists(file_path):
             raise FileNotFoundError(f"Video file not found at: {file_path}")
 
         cmd = [
@@ -41,7 +42,7 @@ class VideoMetadataService:
         format_info = probe_data.get("format", {})
 
         duration = float(format_info.get("duration", 0.0))
-        size_bytes = int(format_info.get("size", os.path.getsize(file_path)))
+        size_bytes = int(format_info.get("size", os.path.getsize(file_path) if not is_url else 0))
         bitrate = int(format_info.get("bit_rate", 0)) if format_info.get("bit_rate") else None
 
         width = None

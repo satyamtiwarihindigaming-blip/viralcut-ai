@@ -22,6 +22,24 @@ export interface SubtitleCard {
   words?: SubtitleWord[];
 }
 
+export type FramingMode = 
+  | 'three_zone_motion' 
+  | 'full_frame_blurred' 
+  | 'speaker_tracking' 
+  | 'split_screen' 
+  | 'stacked_screen' 
+  | 'manual';
+
+export type CaptionStyle = 
+  | 'karaoke' 
+  | 'word_pop' 
+  | 'bouncing' 
+  | 'bold_podcast' 
+  | 'neon_glow' 
+  | 'minimal_clean' 
+  | 'keyword_highlight' 
+  | 'premium_social';
+
 export interface Clip {
   id: number;
   project_id: number;

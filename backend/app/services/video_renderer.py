@@ -32,7 +32,8 @@ class VideoRendererService:
         Renders a high-definition or true 4K vertical short-form clip (9:16)
         using FFmpeg, Lanczos scaling, and hardburned animated captions.
         """
-        if not os.path.exists(source_video_path):
+        is_url = source_video_path.startswith("http://") or source_video_path.startswith("https://")
+        if not is_url and not os.path.exists(source_video_path):
             raise FileNotFoundError(f"Source video not found: {source_video_path}")
 
         duration = max(1.0, end_time - start_time)
@@ -41,14 +42,16 @@ class VideoRendererService:
         if progress_callback:
             progress_callback(10.0, "Preparing reframing and captions...")
 
-        # 1. Generate Reframing Filter Graph
+        # 1. Generate Reframing Filter Graph with Three-Zone Motion and Progress Bar
         base_filter = smart_reframer_service.build_ffmpeg_filter(
             framing_mode=framing_mode,
             in_width=in_width,
             in_height=in_height,
             out_res=export_resolution,
             trajectory=trajectory,
-            manual_crop=manual_crop
+            manual_crop=manual_crop,
+            duration=duration,
+            show_progress_bar=True
         )
 
         # 2. Generate Subtitles ASS File if subtitles are present
@@ -60,7 +63,8 @@ class VideoRendererService:
                 subtitles=subtitles,
                 output_ass_path=ass_path,
                 style=caption_style,
-                hook_text=hook_text
+                hook_text=hook_text,
+                duration=duration
             )
             # Escape path for FFmpeg filter on Windows
             clean_ass_path = ass_path.replace("\\", "/").replace(":", "\\:")

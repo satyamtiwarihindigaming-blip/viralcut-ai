@@ -286,24 +286,33 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
         />
       </div>
 
-      {/* Production Defaults */}
+      {/* Three-Zone Motion Reels & Kinetic Profile */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-dark-800/50 border border-dark-border space-y-1.5">
-          <span className="text-xs text-gray-400 font-medium">Export Resolution</span>
-          <p className="text-base font-bold text-white">4K (2160 × 3840)</p>
-          <p className="text-[11px] text-purple-400">Lanczos High-Quality Scaling</p>
+        <div className="p-4 rounded-xl bg-dark-800/50 border border-purple-500/30 space-y-1.5">
+          <span className="text-xs text-purple-300 font-bold uppercase tracking-wider flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            Three-Zone Composition
+          </span>
+          <p className="text-base font-black text-white">Full-Frame Preserved</p>
+          <p className="text-[11px] text-gray-400">100% complete original frame (no crop)</p>
         </div>
 
         <div className="p-4 rounded-xl bg-dark-800/50 border border-dark-border space-y-1.5">
-          <span className="text-xs text-gray-400 font-medium">Target Clip Duration</span>
-          <p className="text-base font-bold text-white">30 – 60 Seconds</p>
-          <p className="text-[11px] text-emerald-400">Complete Thought Bounds</p>
+          <span className="text-xs text-yellow-300 font-bold uppercase tracking-wider flex items-center gap-1">
+            <Film className="w-3.5 h-3.5 text-yellow-400" />
+            Kinetic Captions
+          </span>
+          <p className="text-base font-black text-white">Word-by-Word Highlight</p>
+          <p className="text-[11px] text-amber-400">Active color bounce & audio sync</p>
         </div>
 
         <div className="p-4 rounded-xl bg-dark-800/50 border border-dark-border space-y-1.5">
-          <span className="text-xs text-gray-400 font-medium">Smart Framing</span>
-          <p className="text-base font-bold text-white">Speaker Auto-Track</p>
-          <p className="text-[11px] text-blue-400">No Basic Center Cropping</p>
+          <span className="text-xs text-emerald-300 font-bold uppercase tracking-wider flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-emerald-400" />
+            True 4K Export
+          </span>
+          <p className="text-base font-black text-white">2160 × 3840 (9:16)</p>
+          <p className="text-[11px] text-emerald-400">Lanczos High-Quality Scaling</p>
         </div>
       </div>
 
