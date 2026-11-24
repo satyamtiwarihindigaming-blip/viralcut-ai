@@ -171,14 +171,33 @@ class PipelineService:
             await self._update_job(job_id, "Gemini AI Analyzing High-Retention Viral Moments", 50.0)
             formatted_text = transcription.get("formatted_transcript", "")
             
+            # Extract user target duration (e.g. 35s, 40s, 45s, 50s)
+            import re
+            target_min_len = 35
+            target_max_len = 50
+            if custom_prompt:
+                dur_match = re.search(r"\[DURATION:\s*(\d+)-(\d+)s\]", custom_prompt)
+                if dur_match:
+                    target_min_len = int(dur_match.group(1))
+                    target_max_len = int(dur_match.group(2))
+            
+            # Guard against source videos shorter than target duration
+            dur_total = metadata.get("duration", 60.0)
+            if dur_total < target_min_len:
+                effective_min = max(5, int(dur_total * 0.4))
+                effective_max = int(dur_total)
+            else:
+                effective_min = target_min_len
+                effective_max = min(int(dur_total), target_max_len)
+
             try:
                 viral_candidates = await asyncio.to_thread(
                     gemini_service.detect_viral_moments,
                     transcript_text=formatted_text,
-                    duration_seconds=metadata["duration"],
+                    duration_seconds=dur_total,
                     target_clips=3,
-                    min_clip_len=15,
-                    max_clip_len=60,
+                    min_clip_len=effective_min,
+                    max_clip_len=effective_max,
                     custom_instructions=custom_prompt
                 )
             except Exception:
@@ -186,15 +205,16 @@ class PipelineService:
 
             if not viral_candidates:
                 dur = metadata["duration"]
+                clip_dur = min(dur, float(target_max_len))
                 viral_candidates = [
                     {
                         "start_time": 0.0,
-                        "end_time": min(dur, 28.0),
+                        "end_time": clip_dur,
                         "title": "Insane Action Climax",
                         "hook": "Wait for this insane moment!",
                         "category": "gaming",
                         "viral_score": 96,
-                        "reason": "High retention opening hook with maximum engagement",
+                        "reason": f"High retention viral clip optimized for {effective_min}-{effective_max}s duration",
                         "framing": "three_zone_motion",
                         "caption_style": "karaoke"
                     }

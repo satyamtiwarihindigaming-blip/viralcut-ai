@@ -36,8 +36,8 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
   const [title, setTitle] = useState<string>('');
   const [customPrompt, setCustomPrompt] = useState<string>('Find the most engaging, high-retention viral moments with strong opening hooks.');
   const [targetClips, setTargetClips] = useState<number>(3);
-  const [minDuration, setMinDuration] = useState<number>(30);
-  const [maxDuration, setMaxDuration] = useState<number>(60);
+  const [minDuration, setMinDuration] = useState<number>(35);
+  const [maxDuration, setMaxDuration] = useState<number>(50);
   
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +98,7 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
     try {
       setError(null);
       let project: Project;
+      const effectivePrompt = `${customPrompt.trim()} [DURATION: ${minDuration}-${maxDuration}s]`;
 
       if (activeTab === 'upload') {
         if (!selectedFile) {
@@ -108,7 +109,7 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
         project = await projectService.uploadVideo(
           selectedFile,
           title || selectedFile.name,
-          customPrompt,
+          effectivePrompt,
           (pct) => setUploadProgress(pct)
         );
       } else {
@@ -117,7 +118,7 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
           return;
         }
         setIsUploading(true);
-        project = await projectService.createFromYoutube(youtubeUrl, customPrompt);
+        project = await projectService.createFromYoutube(youtubeUrl, effectivePrompt);
       }
 
       // Start the Automatic AI Director Pipeline
@@ -301,6 +302,100 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
           placeholder="Describe what kind of viral clips you want (e.g. funny jokes, intense debates, educational revelations)..."
           className="w-full bg-dark-900 border border-dark-border rounded-xl p-3.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
         />
+      </div>
+
+      {/* Target Reel Duration Selector (35s, 40s, 45s, 50s) */}
+      <div className="p-6 rounded-2xl bg-dark-800/60 border border-dark-border space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+            <Clock className="w-4 h-4 text-purple-400" />
+            <span>Target Reel Duration (Instagram Reels, YouTube Shorts)</span>
+          </label>
+          <span className="text-xs font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-full">
+            Target: {minDuration}s – {maxDuration}s
+          </span>
+        </div>
+
+        {/* Quick Duration Preset Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <button
+            type="button"
+            onClick={() => { setMinDuration(30); setMaxDuration(40); }}
+            className={`p-3 rounded-xl border text-left transition-all ${
+              minDuration === 30 && maxDuration === 40
+                ? 'border-purple-500 bg-purple-500/20 text-white shadow-lg shadow-purple-500/10'
+                : 'border-dark-border bg-dark-700/50 text-gray-300 hover:border-gray-500 hover:text-white'
+            }`}
+          >
+            <div className="font-bold text-sm">30s – 40s</div>
+            <div className="text-[11px] text-gray-400">⚡ Fast Hook Viral</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setMinDuration(35); setMaxDuration(50); }}
+            className={`p-3 rounded-xl border text-left transition-all ${
+              minDuration === 35 && maxDuration === 50
+                ? 'border-purple-500 bg-purple-500/20 text-white shadow-lg shadow-purple-500/10'
+                : 'border-dark-border bg-dark-700/50 text-gray-300 hover:border-gray-500 hover:text-white'
+            }`}
+          >
+            <div className="font-bold text-sm text-purple-300">35s – 50s</div>
+            <div className="text-[11px] text-purple-400 font-medium">🔥 Most Viral (Default)</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setMinDuration(40); setMaxDuration(55); }}
+            className={`p-3 rounded-xl border text-left transition-all ${
+              minDuration === 40 && maxDuration === 55
+                ? 'border-purple-500 bg-purple-500/20 text-white shadow-lg shadow-purple-500/10'
+                : 'border-dark-border bg-dark-700/50 text-gray-300 hover:border-gray-500 hover:text-white'
+            }`}
+          >
+            <div className="font-bold text-sm">40s – 55s</div>
+            <div className="text-[11px] text-gray-400">🎙️ High Retention Debate</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setMinDuration(45); setMaxDuration(60); }}
+            className={`p-3 rounded-xl border text-left transition-all ${
+              minDuration === 45 && maxDuration === 60
+                ? 'border-purple-500 bg-purple-500/20 text-white shadow-lg shadow-purple-500/10'
+                : 'border-dark-border bg-dark-700/50 text-gray-300 hover:border-gray-500 hover:text-white'
+            }`}
+          >
+            <div className="font-bold text-sm">45s – 60s</div>
+            <div className="text-[11px] text-gray-400">📖 Story Climax</div>
+          </button>
+        </div>
+
+        {/* Custom Min / Max Inputs */}
+        <div className="grid grid-cols-2 gap-4 pt-1">
+          <div>
+            <span className="text-xs text-gray-400 font-medium">Min Duration (Seconds)</span>
+            <input
+              type="number"
+              min={15}
+              max={maxDuration - 5}
+              value={minDuration}
+              onChange={(e) => setMinDuration(Math.max(10, parseInt(e.target.value) || 35))}
+              className="w-full mt-1 bg-dark-900 border border-dark-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+            />
+          </div>
+          <div>
+            <span className="text-xs text-gray-400 font-medium">Max Duration (Seconds)</span>
+            <input
+              type="number"
+              min={minDuration + 5}
+              max={90}
+              value={maxDuration}
+              onChange={(e) => setMaxDuration(Math.min(90, parseInt(e.target.value) || 50))}
+              className="w-full mt-1 bg-dark-900 border border-dark-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Three-Zone Motion Reels & Kinetic Profile */}
