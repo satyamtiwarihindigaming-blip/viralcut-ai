@@ -1,18 +1,18 @@
 import axios from 'axios';
 import { Project, Clip, ProcessingJob, GeminiSettings, OwnerDashboardData } from '../types';
 
+export const CLOUD_BACKEND_URL = 'https://viralcut-backend-2fih.onrender.com';
+
 const getBackendBaseUrl = (): string => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-    return 'https://viralcut-backend-2fih.onrender.com/api';
-  }
-  return '/api';
+  // 100% Cloud Architecture: Always route to the 24/7 Render Cloud Web Service
+  return `${CLOUD_BACKEND_URL}/api`;
 };
 
 export const API_BASE_URL = getBackendBaseUrl();
-export const BACKEND_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+export const BACKEND_URL = CLOUD_BACKEND_URL;
 
 export const getMediaUrl = (url?: string | null): string => {
   if (!url) return '';
@@ -20,10 +20,7 @@ export const getMediaUrl = (url?: string | null): string => {
     return url;
   }
   const clean = url.replace(/^\/?storage\//, '').replace(/^\//, '');
-  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-    return `https://viralcut-backend-2fih.onrender.com/storage/${clean}`;
-  }
-  return `/storage/${clean}`;
+  return `${CLOUD_BACKEND_URL}/storage/${clean}`;
 };
 
 const api = axios.create({
