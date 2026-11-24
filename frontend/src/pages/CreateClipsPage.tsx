@@ -116,17 +116,6 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
         project = await projectService.createFromYoutube(youtubeUrl, customPrompt);
       }
 
-      // If YouTube project awaits actual file upload
-      if (project.status === 'awaiting_media') {
-        setIsUploading(false);
-        setError(
-          'YouTube metadata recognized! In compliance with video rights and high-res rendering, ' +
-          'please upload the authorized video file to render 4K vertical clips.'
-        );
-        setActiveTab('upload');
-        return;
-      }
-
       // Start the Automatic AI Director Pipeline
       const processRes = await projectService.process(project.id);
       setIsUploading(false);

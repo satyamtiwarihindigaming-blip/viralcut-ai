@@ -1,7 +1,10 @@
 import re
+import os
+import uuid
 import urllib.parse
 from typing import Dict, Any, Optional
 import httpx
+import yt_dlp
 
 class YouTubeService:
     def __init__(self):
@@ -23,8 +26,7 @@ class YouTubeService:
 
     async def get_video_info(self, url: str) -> Dict[str, Any]:
         """
-        Retrieves official public video metadata using YouTube's oEmbed endpoint.
-        Does not bypass restrictions or scrape unauthorized content.
+        Retrieves official public video metadata.
         """
         video_id = self.extract_video_id(url)
         if not video_id:
@@ -48,32 +50,53 @@ class YouTubeService:
                         "author": data.get("author_name", "Unknown Creator"),
                         "thumbnail_url": data.get("thumbnail_url", f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"),
                         "canonical_url": canonical_url,
-                        "requires_media_upload": True,
-                        "message": (
-                            "YouTube metadata verified. In accordance with platform terms and copyright compliance, "
-                            "please upload the authorized video file (MP4/MOV) to render and export 4K clips."
-                        )
+                        "requires_media_upload": False,
+                        "message": "YouTube video recognized and ready for automatic 4K clipping!"
                     }
-                else:
-                    return {
-                        "valid": True,
-                        "video_id": video_id,
-                        "title": f"YouTube Video ({video_id})",
-                        "author": "YouTube Creator",
-                        "thumbnail_url": f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
-                        "canonical_url": canonical_url,
-                        "requires_media_upload": True,
-                        "message": "YouTube link recognized. Please upload the source video file for AI clipping."
-                    }
-        except Exception as e:
+        except Exception:
+            pass
+
+        return {
+            "valid": True,
+            "video_id": video_id,
+            "title": f"YouTube Video ({video_id})",
+            "thumbnail_url": f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
+            "canonical_url": canonical_url,
+            "requires_media_upload": False,
+            "message": "YouTube link recognized and ready for automatic 4K clipping!"
+        }
+
+    def download_video(self, url: str, output_dir: str) -> Dict[str, Any]:
+        """
+        Downloads the source YouTube video into the storage directory using yt-dlp.
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        unique_id = uuid.uuid4().hex[:12]
+        out_template = os.path.join(output_dir, f"yt_{unique_id}.%(ext)s")
+
+        ydl_opts = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'outtmpl': out_template,
+            'quiet': True,
+            'no_warnings': True,
+            'merge_output_format': 'mp4',
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+            base, _ = os.path.splitext(filename)
+            final_mp4 = f"{base}.mp4"
+            filepath = final_mp4 if os.path.exists(final_mp4) else filename
+
             return {
-                "valid": True,
-                "video_id": video_id,
-                "title": f"YouTube Video ({video_id})",
-                "thumbnail_url": f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
-                "canonical_url": canonical_url,
-                "requires_media_upload": True,
-                "message": f"YouTube link detected. Source file required for rendering."
+                "file_path": filepath,
+                "title": info.get("title", "YouTube Video"),
+                "duration": info.get("duration", 0),
+                "width": info.get("width"),
+                "height": info.get("height"),
+                "fps": info.get("fps"),
+                "filesize": os.path.getsize(filepath) if os.path.exists(filepath) else 0,
             }
 
 youtube_service = YouTubeService()

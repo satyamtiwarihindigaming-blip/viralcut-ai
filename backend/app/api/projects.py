@@ -88,13 +88,28 @@ async def create_youtube_project(
     if not info.get("valid"):
         raise HTTPException(status_code=400, detail=info.get("message", "Invalid YouTube link"))
 
+    # Download source video stream automatically into storage
+    upload_dir = str(settings.STORAGE_LOCAL_DIR / "uploads")
+    import asyncio
+    try:
+        download_data = await asyncio.to_thread(
+            youtube_service.download_video, url, upload_dir
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to retrieve YouTube video stream: {str(e)}")
+
     new_project = Project(
-        title=info.get("title", "YouTube Video"),
+        title=download_data.get("title", info.get("title", "YouTube Video")),
         source_type="youtube",
         source_url=info.get("canonical_url"),
+        file_path=download_data.get("file_path"),
+        file_size_bytes=download_data.get("filesize"),
+        duration=download_data.get("duration"),
+        width=download_data.get("width"),
+        height=download_data.get("height"),
+        fps=download_data.get("fps"),
         custom_prompt=custom_prompt,
-        status="awaiting_media" if info.get("requires_media_upload") else "uploaded",
-        error_message=info.get("message")
+        status="uploaded"
     )
     db.add(new_project)
     await db.commit()
@@ -103,6 +118,7 @@ async def create_youtube_project(
     result = await db.execute(
         select(Project).options(selectinload(Project.clips)).where(Project.id == new_project.id)
     )
+    return result.scalar_one()
     return result.scalar_one()
 
 @router.get("", response_model=List[ProjectResponse])
