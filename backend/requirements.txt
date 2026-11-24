@@ -33,7 +33,7 @@ bcrypt>=4.2.1
 celery>=5.4.0
 redis>=5.2.0
 boto3>=1.35.68
-yt-dlp>=2024.11.0
+yt-dlp[default]>=2024.11.0
 
 # Utilities
 python-dotenv>=1.0.1

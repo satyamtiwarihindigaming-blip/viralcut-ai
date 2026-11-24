@@ -132,7 +132,10 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
       onNavigate('projects');
     } catch (e: any) {
       setIsUploading(false);
-      onNavigate('projects');
+      const msg = typeof e.response?.data?.detail === 'string'
+        ? e.response.data.detail
+        : e.message || 'Failed to start AI Director pipeline';
+      setError(msg);
     }
   };
 
@@ -427,6 +430,17 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
           <p className="text-[11px] text-emerald-400">Lanczos High-Quality Scaling</p>
         </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/40 flex items-start gap-3 text-purple-300 text-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-purple-400" />
+          <div className="space-y-1">
+            <p className="font-semibold text-white">Notice</p>
+            <p className="text-xs text-gray-300 leading-relaxed">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Submit Action */}
       <div className="pt-2">

@@ -29,7 +29,7 @@ ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 
 # Install python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip yt-dlp && \
     pip install --no-cache-dir -r requirements.txt && \
     python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
 

@@ -96,9 +96,12 @@ async def create_youtube_project(
             youtube_service.download_or_stream, url, upload_dir
         )
     except Exception as e:
+        err_msg = str(e)
+        if "Unable to process" not in err_msg:
+            err_msg = f"{err_msg}"
         raise HTTPException(
             status_code=400,
-            detail=f"Unable to process this YouTube link: {str(e)}. Please try another link or upload your video directly."
+            detail=err_msg
         )
 
     new_project = Project(
