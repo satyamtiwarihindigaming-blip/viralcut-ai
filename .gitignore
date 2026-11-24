@@ -60,6 +60,8 @@ backend/exports/*
 backend/temp/*
 !backend/temp/.gitkeep
 *.mp4
+!backend/app/assets/**
+!backend/app/assets/*.mp4
 *.mov
 *.mkv
 *.webm

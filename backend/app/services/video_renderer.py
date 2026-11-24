@@ -92,7 +92,7 @@ class VideoRendererService:
             "-y",
             *input_args,
             "-ss", str(start_time),
-            "-to", str(end_time),
+            "-t", str(duration),
             "-i", str(source_video_path),
             "-filter_complex", filter_complex,
             "-map", map_video,

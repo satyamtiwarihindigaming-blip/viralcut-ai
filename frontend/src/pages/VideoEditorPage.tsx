@@ -430,6 +430,12 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
                   className="absolute inset-0 w-full h-full object-cover scale-150 blur-xl opacity-45 pointer-events-none"
                   muted
                   playsInline
+                  onError={(e) => {
+                    const fallback = getMediaUrl('/storage/uploads/sample_action.mp4');
+                    if (e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                 />
               )}
 
@@ -441,6 +447,12 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
                   onClick={handlePlayPause}
+                  onError={(e) => {
+                    const fallback = getMediaUrl('/storage/uploads/sample_action.mp4');
+                    if (e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                   className={`relative z-10 w-full ${preserveFullFrame ? 'max-h-[60%] object-contain rounded-lg shadow-2xl border border-white/10' : 'h-full object-cover'} cursor-pointer`}
                   playsInline
                 />

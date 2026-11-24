@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # Video Processing Limits & Quality
     MAX_UPLOAD_SIZE_MB: int = 1000
     MAX_VIDEO_DURATION_SECONDS: int = 7200
-    DEFAULT_EXPORT_RESOLUTION: str = "4K" # 4K: 2160x3840, 1440p: 1440x2560, 1080p: 1080x1920, 720p: 720x1280
+    DEFAULT_EXPORT_RESOLUTION: str = "1080p" # 1080p: 1080x1920 (ultra-fast cloud render), 4K: 2160x3840
     DEFAULT_EXPORT_CRF: int = 18
     DEFAULT_EXPORT_CODEC: str = "libx264" # libx264 or libx265
     
