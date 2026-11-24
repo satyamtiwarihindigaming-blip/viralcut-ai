@@ -59,7 +59,9 @@ backend/temp/*
 *.mkv
 *.webm
 *.avi
-*.ts
+# MPEG-TS video files (not TypeScript code)
+backend/temp/*.ts
+backend/uploads/*.ts
 *.m4a
 *.wav
 *.mp3
@@ -70,7 +72,8 @@ backend/temp/*
 backend/viralcut.db
 
 # Faster Whisper & Torch cache
-models/
+/models/
+!backend/app/models/
 .cache/
 
 # OS / Editor
