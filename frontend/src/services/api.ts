@@ -1,9 +1,34 @@
 import axios from 'axios';
 import { Project, Clip, ProcessingJob, GeminiSettings, OwnerDashboardData } from '../types';
 
+const getBackendBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    return 'https://viralcut-backend-2fih.onrender.com/api';
+  }
+  return '/api';
+};
+
+export const API_BASE_URL = getBackendBaseUrl();
+export const BACKEND_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+
+export const getMediaUrl = (url?: string | null): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url;
+  }
+  const clean = url.replace(/^\/?storage\//, '').replace(/^\//, '');
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    return `https://viralcut-backend-2fih.onrender.com/storage/${clean}`;
+  }
+  return `/storage/${clean}`;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000,
+  baseURL: API_BASE_URL,
+  timeout: 60000,
 });
 
 // Attach Authorization token if stored
@@ -158,8 +183,8 @@ export const projectService = {
   list: async (): Promise<Project[]> => {
     try {
       const res = await api.get('/projects');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
-      return mockDemoProjects;
+      if (Array.isArray(res.data)) return res.data;
+      return [];
     } catch {
       return mockDemoProjects;
     }
@@ -186,8 +211,8 @@ export const clipService = {
   list: async (projectId?: number): Promise<Clip[]> => {
     try {
       const res = await api.get('/clips', { params: { project_id: projectId } });
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
-      return mockDemoClips;
+      if (Array.isArray(res.data)) return res.data;
+      return [];
     } catch {
       return mockDemoClips;
     }

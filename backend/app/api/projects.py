@@ -88,26 +88,35 @@ async def create_youtube_project(
     if not info.get("valid"):
         raise HTTPException(status_code=400, detail=info.get("message", "Invalid YouTube link"))
 
-    # Live internet stream extraction (instant, no local storage waste)
+    # Direct Video Download with TV/Embedded Bot Bypass
     import asyncio
+    upload_dir = str(settings.STORAGE_LOCAL_DIR / "uploads")
     try:
-        stream_data = await asyncio.to_thread(
-            youtube_service.get_live_stream_data, url
+        video_data = await asyncio.to_thread(
+            youtube_service.download_or_stream, url, upload_dir
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to access YouTube video stream: {str(e)}")
+        # If download fails, try live stream metadata extraction as fallback
+        try:
+            video_data = await asyncio.to_thread(
+                youtube_service.get_live_stream_data, url
+            )
+            video_data["file_path"] = video_data.get("stream_url")
+            video_data["file_size_bytes"] = 0
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Failed to access YouTube video: {str(e)}")
 
     new_project = Project(
-        title=stream_data.get("title", info.get("title", "YouTube Video")),
+        title=video_data.get("title", info.get("title", "YouTube Video")),
         source_type="youtube",
         source_url=info.get("canonical_url"),
-        file_path=stream_data.get("stream_url"),
-        file_size_bytes=0,
-        duration=stream_data.get("duration"),
-        width=stream_data.get("width"),
-        height=stream_data.get("height"),
-        fps=stream_data.get("fps"),
-        transcription_data=stream_data.get("transcription_data"),
+        file_path=video_data.get("file_path"),
+        file_size_bytes=video_data.get("file_size_bytes", 0),
+        duration=video_data.get("duration"),
+        width=video_data.get("width"),
+        height=video_data.get("height"),
+        fps=video_data.get("fps"),
+        transcription_data=video_data.get("transcription_data"),
         custom_prompt=custom_prompt,
         status="uploaded"
     )

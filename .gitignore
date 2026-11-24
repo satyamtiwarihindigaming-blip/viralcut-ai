@@ -1,3 +1,8 @@
+# Media storage directory
+backend/storage/
+backend/test_*.py
+backend/fix_*.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

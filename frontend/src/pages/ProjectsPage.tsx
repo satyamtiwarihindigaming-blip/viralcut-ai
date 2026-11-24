@@ -12,7 +12,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { Project } from '../types';
-import { projectService } from '../services/api';
+import { projectService, getMediaUrl } from '../services/api';
 
 interface ProjectsPageProps {
   onNavigate: (page: string, params?: any) => void;
@@ -177,7 +177,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate, onJobSta
                         {/* Thumbnail Container */}
                         <div className="relative aspect-[9/16] max-h-56 w-full bg-black/60 overflow-hidden flex items-center justify-center">
                           {clip.thumbnail_path ? (
-                            <img src={clip.thumbnail_path} alt={clip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <img src={getMediaUrl(clip.thumbnail_path)} alt={clip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           ) : (
                             <div className="text-center p-4">
                               <Film className="w-8 h-8 text-gray-600 mx-auto mb-1" />
@@ -221,9 +221,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onNavigate, onJobSta
                               <span>Edit</span>
                             </button>
 
-                            {clip.download_url && (
+                            {(clip.download_url || clip.rendered_file_path) && (
                               <a
-                                href={clip.download_url}
+                                href={getMediaUrl(clip.download_url || clip.rendered_file_path)}
                                 download
                                 className="p-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors"
                                 title="Download 4K"

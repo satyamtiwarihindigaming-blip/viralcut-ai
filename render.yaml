@@ -13,10 +13,10 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://viralcut-backend.onrender.com/api/*
+        destination: https://viralcut-backend-2fih.onrender.com/api/*
       - type: rewrite
         source: /storage/*
-        destination: https://viralcut-backend.onrender.com/storage/*
+        destination: https://viralcut-backend-2fih.onrender.com/storage/*
       - type: rewrite
         source: /*
         destination: /index.html

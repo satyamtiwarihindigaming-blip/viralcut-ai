@@ -13,7 +13,7 @@ import {
   Cpu
 } from 'lucide-react';
 import { Project, Clip, OwnerDashboardData } from '../types';
-import { projectService, clipService, ownerService } from '../services/api';
+import { projectService, clipService, ownerService, getMediaUrl } from '../services/api';
 
 interface DashboardProps {
   onNavigate: (page: string, params?: any) => void;
@@ -207,7 +207,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <div className="flex items-center gap-3 truncate">
                     <div className="w-10 h-10 rounded-lg bg-dark-900 overflow-hidden flex-shrink-0 flex items-center justify-center">
                       {c.thumbnail_path ? (
-                        <img src={c.thumbnail_path} alt={c.title} className="w-full h-full object-cover" />
+                        <img src={getMediaUrl(c.thumbnail_path)} alt={c.title} className="w-full h-full object-cover" />
                       ) : (
                         <Scissors className="w-4 h-4 text-purple-400" />
                       )}
@@ -219,9 +219,9 @@ export const DashboardPage: React.FC<DashboardProps> = ({ onNavigate }) => {
                       </p>
                     </div>
                   </div>
-                  {c.download_url && (
+                  {(c.download_url || c.rendered_file_path) && (
                     <a
-                      href={c.download_url}
+                      href={getMediaUrl(c.download_url || c.rendered_file_path)}
                       download
                       onClick={(e) => e.stopPropagation()}
                       className="p-2 rounded-lg bg-dark-800 hover:bg-purple-600 text-gray-300 hover:text-white transition-colors"

@@ -13,7 +13,7 @@ import {
   Sliders
 } from 'lucide-react';
 import { Clip } from '../types';
-import { clipService } from '../services/api';
+import { clipService, getMediaUrl } from '../services/api';
 
 interface ExportsPageProps {
   onNavigate: (page: string, params?: any) => void;
@@ -152,7 +152,7 @@ export const ExportsPage: React.FC<ExportsPageProps> = ({ onNavigate }) => {
                 {/* Actions */}
                 <div className="flex items-center gap-2 pt-1">
                   <a
-                    href={clip.download_url}
+                    href={getMediaUrl(clip.download_url || clip.rendered_file_path)}
                     download
                     className="flex-1 py-2 rounded-xl gradient-brand text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-purple-600/20 hover:opacity-95 transition-opacity"
                   >
@@ -198,7 +198,7 @@ export const ExportsPage: React.FC<ExportsPageProps> = ({ onNavigate }) => {
 
             <div className="aspect-[9/16] w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
               <video
-                src={previewClip.download_url}
+                src={getMediaUrl(previewClip.download_url || previewClip.rendered_file_path)}
                 controls
                 autoPlay
                 className="w-full h-full object-cover"
@@ -210,7 +210,7 @@ export const ExportsPage: React.FC<ExportsPageProps> = ({ onNavigate }) => {
                 {previewClip.export_resolution} • {Math.round(previewClip.duration)}s
               </span>
               <a
-                href={previewClip.download_url}
+                href={getMediaUrl(previewClip.download_url || previewClip.rendered_file_path)}
                 download
                 className="px-4 py-2 rounded-xl gradient-brand text-white text-xs font-bold flex items-center gap-1.5"
               >

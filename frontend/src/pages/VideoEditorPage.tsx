@@ -24,7 +24,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { Clip, Project, FramingMode, CaptionStyle } from '../types';
-import { clipService, projectService } from '../services/api';
+import { clipService, projectService, getMediaUrl } from '../services/api';
 
 interface VideoEditorProps {
   clipId?: number;
@@ -324,7 +324,8 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
     );
   }
 
-  const videoSourceUrl = selectedClip.download_url || (selectedClip.rendered_file_path ? `/storage/${selectedClip.rendered_file_path.replace(/\\/g, '/').replace(/^storage\//, '')}` : '');
+  const rawMedia = selectedClip.download_url || (selectedClip.rendered_file_path ? `/storage/${selectedClip.rendered_file_path.replace(/\\/g, '/').replace(/^storage\//, '')}` : '');
+  const videoSourceUrl = getMediaUrl(rawMedia);
 
   return (
     <div className="space-y-6 pb-12">
@@ -373,9 +374,9 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
             Render 4K Vertical
           </button>
 
-          {selectedClip.download_url && (
+          {(selectedClip.download_url || selectedClip.rendered_file_path) && (
             <a 
-              href={selectedClip.download_url} 
+              href={getMediaUrl(selectedClip.download_url || selectedClip.rendered_file_path)} 
               download 
               className="p-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-gray-300 border border-dark-border"
               title="Download Current MP4"
