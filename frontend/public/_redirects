@@ -1,1 +1,3 @@
+/api/*    https://viralcut-backend-2fih.onrender.com/api/:splat   200
+/storage/*    https://viralcut-backend-2fih.onrender.com/storage/:splat   200
 /*    /index.html   200
