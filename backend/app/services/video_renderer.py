@@ -95,26 +95,16 @@ class VideoRendererService:
 
         start_render = time.time()
         try:
-            # Execute FFmpeg rendering process
-            process = subprocess.Popen(
+            # Execute FFmpeg rendering process cleanly without buffer deadlock
+            res = subprocess.run(
                 cmd,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
+                check=False
             )
-            
-            # Simple progress simulation while FFmpeg runs
-            while process.poll() is None:
-                elapsed = time.time() - start_render
-                # Estimate progress based on duration
-                est_pct = min(90.0, 25.0 + (elapsed / (duration * 0.8)) * 65.0)
-                if progress_callback:
-                    progress_callback(est_pct, f"Rendering 4K vertical video... ({int(est_pct)}%)")
-                time.sleep(1.0)
-
-            stdout, stderr = process.communicate()
-            if process.returncode != 0:
-                raise RuntimeError(f"FFmpeg render failed with exit code {process.returncode}:\n{stderr[-500:]}")
+            if res.returncode != 0:
+                raise RuntimeError(f"FFmpeg render failed with exit code {res.returncode}:\n{res.stderr[-500:]}")
 
         finally:
             # Clean up temporary ASS file
