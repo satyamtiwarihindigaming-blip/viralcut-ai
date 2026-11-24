@@ -37,6 +37,17 @@ class YouTubeService:
         if os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 50:
             return cookie_path
 
+        # Check bundled asset first
+        asset_cookie = Path(__file__).parent.parent / "assets" / "cookies.txt"
+        if asset_cookie.exists() and asset_cookie.stat().st_size > 50:
+            os.makedirs(os.path.dirname(cookie_path), exist_ok=True)
+            if not os.path.exists(cookie_path) or os.path.getsize(cookie_path) < 50:
+                try:
+                    shutil.copy2(str(asset_cookie), cookie_path)
+                except Exception:
+                    pass
+            return str(asset_cookie) if not os.path.exists(cookie_path) else cookie_path
+
         try:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -166,7 +177,8 @@ class YouTubeService:
 
         ydl_opts = self._get_base_ydl_opts()
         ydl_opts.update({
-            'format': '18/best[ext=mp4]/best',
+            'format': 'bv*[height<=720]+ba/b[height<=720]/best',
+            'merge_output_format': 'mp4',
             'outtmpl': out_template,
             'download_ranges': lambda info_dict, ydl: [{'start_time': 0, 'end_time': 180}]
         })
@@ -186,7 +198,8 @@ class YouTubeService:
             try:
                 fallback_opts = self._get_base_ydl_opts()
                 fallback_opts.update({
-                    'format': '18/best',
+                    'format': 'bv*+ba/b/best',
+                    'merge_output_format': 'mp4',
                     'outtmpl': out_template,
                 })
                 with yt_dlp.YoutubeDL(fallback_opts) as ydl:
@@ -204,11 +217,15 @@ class YouTubeService:
                 alt_opts = {
                     'quiet': True,
                     'no_warnings': True,
-                    'format': '18/best',
+                    'format': 'bv*[height<=720]+ba/b[height<=720]/best',
+                    'merge_output_format': 'mp4',
                     'outtmpl': out_template,
                     'extractor_args': {'youtube': {'player-client': ['android', 'ios']}},
                     'download_ranges': lambda info_dict, ydl: [{'start_time': 0, 'end_time': 180}]
                 }
+                cookie_file = self.ensure_visitor_cookies()
+                if cookie_file and os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 10:
+                    alt_opts['cookiefile'] = cookie_file
                 with yt_dlp.YoutubeDL(alt_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
                     filename = ydl.prepare_filename(info)
