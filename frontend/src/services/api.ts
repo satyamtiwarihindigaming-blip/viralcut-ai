@@ -298,6 +298,18 @@ export const settingsService = {
     } catch {
       return { success: true, message: "Gemini 3.5 Flash Lite connection verified!" };
     }
+  },
+  getYoutubeCookies: async () => {
+    try {
+      const res = await api.get('/settings/youtube-cookies');
+      return res.data;
+    } catch {
+      return { is_configured: false };
+    }
+  },
+  updateYoutubeCookies: async (cookiesContent: string) => {
+    const res = await api.post('/settings/youtube-cookies', { cookies_content: cookiesContent });
+    return res.data;
   }
 };
 

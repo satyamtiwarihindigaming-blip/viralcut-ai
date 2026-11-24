@@ -273,6 +273,55 @@ export const AISettingsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* YouTube Cloud Authentication Section */}
+      <div className="p-8 rounded-3xl bg-dark-800/60 border border-dark-border space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-purple-400" />
+              <span>YouTube Cloud Downloader Session (Optional)</span>
+            </h2>
+            <p className="text-xs text-gray-400">
+              YouTube restricts automated downloads from cloud servers with bot verification checks.
+              Paste your Netscape <code className="text-purple-300">cookies.txt</code> from any browser extension
+              to unlock unlimited 1-click cloud downloading!
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          const target = e.currentTarget as any;
+          const cookiesVal = target.cookiesInput?.value;
+          if (!cookiesVal?.trim()) return;
+          try {
+            await settingsService.updateYoutubeCookies(cookiesVal);
+            setFeedback({ type: 'success', message: 'YouTube cookies saved! Cloud downloads unlocked.' });
+            target.cookiesInput.value = '';
+          } catch (err: any) {
+            setFeedback({ type: 'error', message: err.message || 'Failed to save cookies' });
+          }
+        }} className="space-y-4">
+          <textarea
+            name="cookiesInput"
+            rows={3}
+            placeholder="Paste your cookies.txt content here (Netscape HTTP Cookie File format)..."
+            className="w-full bg-dark-900 border border-dark-border rounded-xl p-3 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-purple-500"
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] text-gray-500">
+              Tip: Use the free Chrome/Firefox extension <strong>"Get cookies.txt LOCALLY"</strong> while logged into YouTube.
+            </p>
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors shadow-md shadow-purple-600/20"
+            >
+              Save Cloud Session
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

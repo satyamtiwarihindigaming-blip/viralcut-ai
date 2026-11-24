@@ -92,6 +92,36 @@ async def update_gemini_settings(req: GeminiSettingsRequest):
         "is_configured": bool(settings.GEMINI_API_KEY)
     }
 
+class CookieSettingsRequest(BaseModel):
+    cookies_content: str
+
+@router.get("/youtube-cookies")
+async def get_youtube_cookies_status():
+    cookie_path = os.getenv("YOUTUBE_COOKIES_PATH", str(settings.STORAGE_LOCAL_DIR / "cookies.txt"))
+    has_cookies = os.path.exists(cookie_path) and os.path.getsize(cookie_path) > 10
+    return {
+        "is_configured": has_cookies,
+        "cookie_path": cookie_path if has_cookies else None,
+        "message": "YouTube authentication cookies active" if has_cookies else "No YouTube cookies configured"
+    }
+
+@router.post("/youtube-cookies")
+async def update_youtube_cookies(req: CookieSettingsRequest):
+    if not req.cookies_content or not req.cookies_content.strip():
+        raise HTTPException(status_code=400, detail="Cookies content cannot be empty")
+    
+    cookie_path = str(settings.STORAGE_LOCAL_DIR / "cookies.txt")
+    os.makedirs(os.path.dirname(cookie_path), exist_ok=True)
+    with open(cookie_path, "w", encoding="utf-8") as f:
+        f.write(req.cookies_content.strip())
+    
+    os.environ["YOUTUBE_COOKIES_PATH"] = cookie_path
+    return {
+        "success": True,
+        "message": "YouTube authentication cookies saved successfully! Cloud YouTube downloads now unlocked.",
+        "is_configured": True
+    }
+
 @router.post("/gemini/test", response_model=GeminiTestResponse)
 async def test_gemini_connection():
     """
