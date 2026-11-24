@@ -204,17 +204,21 @@ class PipelineService:
                 end_t = candidate["end_time"]
                 duration_t = round(end_t - start_t, 2)
 
-                if is_live_stream:
-                    tracking_result = {"recommended_layout": candidate.get("framing", "speaker_tracking"), "trajectory": []}
-                else:
-                    tracking_result = await asyncio.to_thread(
-                        face_tracking_service.analyze_faces_in_clip,
-                        video_path,
-                        start_t,
-                        end_t
-                    )
                 framing = candidate.get("framing") or "three_zone_motion"
                 caption_style = candidate.get("caption_style") or "karaoke"
+
+                if is_live_stream or framing in ["three_zone_motion", "full_frame_blurred", "default", "full_frame"]:
+                    tracking_result = {"recommended_layout": framing, "trajectory": []}
+                else:
+                    try:
+                        tracking_result = await asyncio.to_thread(
+                            face_tracking_service.analyze_faces_in_clip,
+                            video_path,
+                            start_t,
+                            end_t
+                        )
+                    except Exception:
+                        tracking_result = {"recommended_layout": framing, "trajectory": []}
 
                 # Extract word-level subtitles for this segment
                 subtitles = transcription_service.extract_clip_subtitles(
@@ -226,6 +230,10 @@ class PipelineService:
                 output_clip_path = str(settings.STORAGE_LOCAL_DIR / "clips" / clip_filename)
                 thumb_filename = f"thumb_{project_id}_{idx + 1}_{uuid.uuid4().hex[:8]}.jpg"
                 thumb_path = str(settings.STORAGE_LOCAL_DIR / "clips" / thumb_filename)
+
+                # Free python memory before launching FFmpeg
+                import gc
+                gc.collect()
 
                 # Direct Stream Render Clip in FFmpeg with Three-Zone Kinetic Motion
                 render_result = await asyncio.to_thread(
