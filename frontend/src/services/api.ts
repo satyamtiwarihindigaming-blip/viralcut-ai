@@ -3,16 +3,21 @@ import { Project, Clip, ProcessingJob, GeminiSettings, OwnerDashboardData } from
 
 export const CLOUD_BACKEND_URL = 'https://viralcut-backend-2fih.onrender.com';
 
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 const getBackendBaseUrl = (): string => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  // 100% Cloud Architecture: Always route to the 24/7 Render Cloud Web Service
+  if (isLocalhost) {
+    return '/api';
+  }
   return `${CLOUD_BACKEND_URL}/api`;
 };
 
 export const API_BASE_URL = getBackendBaseUrl();
-export const BACKEND_URL = CLOUD_BACKEND_URL;
+export const BACKEND_URL = isLocalhost ? '' : CLOUD_BACKEND_URL;
 
 export const getMediaUrl = (url?: string | null): string => {
   if (!url) return '';
@@ -20,6 +25,9 @@ export const getMediaUrl = (url?: string | null): string => {
     return url;
   }
   const clean = url.replace(/^\/?storage\//, '').replace(/^\//, '');
+  if (isLocalhost) {
+    return `/storage/${clean}`;
+  }
   return `${CLOUD_BACKEND_URL}/storage/${clean}`;
 };
 
