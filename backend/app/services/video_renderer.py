@@ -91,10 +91,6 @@ class VideoRendererService:
             self.ffmpeg,
             "-y",
             *input_args,
-            "-threads", "1",
-            "-filter_threads", "1",
-            "-filter_complex_threads", "1",
-            "-max_muxing_queue_size", "512",
             "-ss", str(start_time),
             "-t", str(duration),
             "-i", str(source_video_path),
@@ -102,12 +98,14 @@ class VideoRendererService:
             "-map", map_video,
             "-map", "0:a?", # Copy or encode audio if present
             "-c:v", export_codec,
+            "-threads", "1",
             "-crf", str(crf),
             "-preset", "ultrafast", # Fastest live stream rendering
             "-bufsize", "2M",
             "-c:a", "aac",
             "-b:a", "192k",
             "-ar", "48000",
+            "-max_muxing_queue_size", "1024",
             "-movflags", "+faststart",
             str(output_clip_path)
         ]
