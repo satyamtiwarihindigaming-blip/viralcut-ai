@@ -21,7 +21,7 @@ export const AISettingsPage: React.FC = () => {
 
   // Form inputs
   const [apiKey, setApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash-lite');
   
   // Test result state
   const [isTesting, setIsTesting] = useState(false);
@@ -207,10 +207,10 @@ export const AISettingsPage: React.FC = () => {
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', badge: 'Recommended' },
-                { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', badge: 'Fast' },
-                { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', badge: 'Stable' },
-                { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', badge: 'Deep Reasoning' }
+                { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', badge: 'Recommended' },
+                { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', badge: 'High Quality' },
+                { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', badge: 'Balanced' },
+                { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro', badge: 'Deep Reasoning' }
               ].map((m) => (
                 <button
                   type="button"

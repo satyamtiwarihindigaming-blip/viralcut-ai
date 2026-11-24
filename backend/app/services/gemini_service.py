@@ -9,8 +9,14 @@ from app.core.config import settings
 class GeminiService:
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
-        self.model_name = model_name or settings.GEMINI_MODEL or "gemini-2.5-flash"
+        self.model_name = model_name or settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
         self._client: Optional[genai.Client] = None
+        self.supported_models = [
+            "gemini-3.5-flash-lite",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash",
+            "gemini-3.1-pro-preview",
+        ]
     
     def _get_client(self) -> genai.Client:
         key = self.api_key or settings.GEMINI_API_KEY
@@ -35,12 +41,7 @@ class GeminiService:
             )
             latency_ms = round((time.time() - start_time) * 1000, 2)
             
-            supported_models = [
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-                "gemini-1.5-pro",
-            ]
+            supported_models = self.supported_models
             
             return {
                 "success": True,

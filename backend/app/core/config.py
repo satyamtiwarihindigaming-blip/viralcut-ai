@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union, Any
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -16,12 +16,25 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            if v.startswith("["):
+                try:
+                    import json
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [i.strip() for i in v.split(",") if i.strip()]
+        return v
     
     # Authentication & Security
     SECRET_KEY: str = "viralcut-ai-super-secret-key-production-change-this-32-chars-min"
@@ -34,7 +47,7 @@ class Settings(BaseSettings):
     
     # Gemini AI SDK Configuration
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
     
     # Database
     DATABASE_URL: str = f"sqlite+aiosqlite:///{BASE_DIR / 'viralcut.db'}"
