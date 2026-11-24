@@ -73,10 +73,20 @@ class VideoRendererService:
         if progress_callback:
             progress_callback(25.0, f"Rendering {export_resolution} video with {export_codec}...")
 
-        # 3. Build FFmpeg command
+        # 3. Build FFmpeg command (supporting local files & live internet streams)
+        input_args = []
+        if source_video_path.startswith("http://") or source_video_path.startswith("https://"):
+            input_args = [
+                "-reconnect", "1",
+                "-reconnect_at_eof", "1",
+                "-reconnect_streamed", "1",
+                "-reconnect_delay_max", "5",
+            ]
+
         cmd = [
             self.ffmpeg,
             "-y",
+            *input_args,
             "-ss", str(start_time),
             "-to", str(end_time),
             "-i", str(source_video_path),
@@ -85,7 +95,7 @@ class VideoRendererService:
             "-map", "0:a?", # Copy or encode audio if present
             "-c:v", export_codec,
             "-crf", str(crf),
-            "-preset", "veryfast",
+            "-preset", "ultrafast", # Fastest live stream rendering
             "-c:a", "aac",
             "-b:a", "192k",
             "-ar", "48000",

@@ -67,41 +67,51 @@ class PipelineService:
             async with AsyncSessionLocal() as session:
                 project = await session.get(Project, project_id)
                 if not project or not project.file_path:
-                    raise ValueError("Project source media file not found")
+                    raise ValueError("Project source media not found")
                 video_path = project.file_path
                 custom_prompt = project.custom_prompt
+                cached_transcription = project.transcription_data
+                proj_duration = project.duration or 60.0
+                proj_width = project.width or 1920
+                proj_height = project.height or 1080
 
-            # 2. Extract Metadata (FFprobe)
-            await self._update_job(job_id, "Extracting Video Metadata", 10.0)
-            metadata = video_metadata_service.get_metadata(video_path)
-            
-            async with AsyncSessionLocal() as session:
-                p = await session.get(Project, project_id)
-                p.duration = metadata["duration"]
-                p.width = metadata["width"]
-                p.height = metadata["height"]
-                p.fps = metadata["fps"]
-                p.codec = metadata["codec"]
-                await session.commit()
+            is_live_stream = video_path.startswith("http://") or video_path.startswith("https://")
 
-            # 3. Scene Detection (PySceneDetect)
-            await self._update_job(job_id, "Detecting Visual Scene Cuts", 20.0)
-            scenes = scene_detector_service.detect_scenes(video_path)
+            # 2. Extract Metadata
+            await self._update_job(job_id, "Checking Stream Metadata", 15.0)
+            if is_live_stream:
+                metadata = {
+                    "duration": proj_duration,
+                    "width": proj_width,
+                    "height": proj_height,
+                    "fps": project.fps or 30.0,
+                    "codec": "h264"
+                }
+            else:
+                metadata = video_metadata_service.get_metadata(video_path)
+                async with AsyncSessionLocal() as session:
+                    p = await session.get(Project, project_id)
+                    p.duration = metadata["duration"]
+                    p.width = metadata["width"]
+                    p.height = metadata["height"]
+                    p.fps = metadata["fps"]
+                    p.codec = metadata["codec"]
+                    await session.commit()
 
-            # 4. Transcription (Faster-Whisper)
-            await self._update_job(job_id, "Transcribing Audio & Generating Word Timestamps", 35.0)
-            # Run CPU-bound whisper transcription in thread pool
-            transcription = await asyncio.to_thread(
-                transcription_service.transcribe_video, video_path
-            )
+            # 3. Fast Transcription (using stream-extracted captions or Whisper)
+            await self._update_job(job_id, "Extracting Timed Speech & Captions", 30.0)
+            if cached_transcription and len(cached_transcription.get("segments", [])) > 0:
+                transcription = cached_transcription
+            else:
+                transcription = await asyncio.to_thread(
+                    transcription_service.transcribe_video, video_path
+                )
+                async with AsyncSessionLocal() as session:
+                    p = await session.get(Project, project_id)
+                    p.transcription_data = transcription
+                    await session.commit()
 
-            async with AsyncSessionLocal() as session:
-                p = await session.get(Project, project_id)
-                p.transcription_data = transcription
-                p.scene_cuts = scenes
-                await session.commit()
-
-            # 5. Gemini AI Viral Moment Detection
+            # 4. Gemini AI Viral Moment Detection
             await self._update_job(job_id, "Gemini AI Analyzing High-Retention Viral Moments", 50.0)
             formatted_text = transcription.get("formatted_transcript", "")
             
@@ -110,12 +120,12 @@ class PipelineService:
                 transcript_text=formatted_text,
                 duration_seconds=metadata["duration"],
                 target_clips=3,
-                min_clip_len=30,
+                min_clip_len=20,
                 max_clip_len=60,
                 custom_instructions=custom_prompt
             )
 
-            # 6. For each viral moment: Reframing, Subtitle extraction, and Rendering
+            # 5. For each viral moment: Reframing, Subtitles, and Direct Stream Render
             total_clips = len(viral_candidates)
             created_clips = []
 
@@ -123,7 +133,7 @@ class PipelineService:
                 clip_pct_base = 55.0 + (idx / total_clips) * 40.0
                 await self._update_job(
                     job_id,
-                    f"Processing Clip {idx + 1}/{total_clips}: {candidate['title']}",
+                    f"Direct Stream Rendering Clip {idx + 1}/{total_clips}: {candidate['title']}",
                     clip_pct_base
                 )
 
@@ -131,13 +141,15 @@ class PipelineService:
                 end_t = candidate["end_time"]
                 duration_t = round(end_t - start_t, 2)
 
-                # Face tracking & layout selection
-                tracking_result = await asyncio.to_thread(
-                    face_tracking_service.analyze_faces_in_clip,
-                    video_path,
-                    start_t,
-                    end_t
-                )
+                if is_live_stream:
+                    tracking_result = {"recommended_layout": candidate.get("framing", "speaker_tracking"), "trajectory": []}
+                else:
+                    tracking_result = await asyncio.to_thread(
+                        face_tracking_service.analyze_faces_in_clip,
+                        video_path,
+                        start_t,
+                        end_t
+                    )
                 framing = candidate.get("framing") or tracking_result.get("recommended_layout", "speaker_tracking")
 
                 # Extract word-level subtitles for this segment
@@ -151,7 +163,7 @@ class PipelineService:
                 thumb_filename = f"thumb_{project_id}_{idx + 1}_{uuid.uuid4().hex[:8]}.jpg"
                 thumb_path = str(settings.STORAGE_LOCAL_DIR / "clips" / thumb_filename)
 
-                # Render Clip in FFmpeg
+                # Direct Stream Render Clip in FFmpeg
                 render_result = await asyncio.to_thread(
                     video_renderer_service.render_clip,
                     source_video_path=video_path,

@@ -74,8 +74,9 @@ async def rerender_clip(
         raise HTTPException(status_code=404, detail="Clip not found")
 
     project = clip.project
-    if not project or not project.file_path or not os.path.exists(project.file_path):
-        raise HTTPException(status_code=400, detail="Source media file not found")
+    is_stream = project and project.file_path and (project.file_path.startswith("http://") or project.file_path.startswith("https://"))
+    if not project or not project.file_path or (not is_stream and not os.path.exists(project.file_path)):
+        raise HTTPException(status_code=400, detail="Source media source not found")
 
     clip.status = "rendering"
     clip.render_progress = 10.0

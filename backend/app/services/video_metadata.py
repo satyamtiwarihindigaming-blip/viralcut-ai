@@ -86,9 +86,14 @@ class VideoMetadataService:
     def generate_thumbnail(self, video_path: str, output_path: str, timestamp_sec: float = 1.0) -> str:
         """Extract a single high-quality JPG thumbnail frame using FFmpeg."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        reconnect_args = []
+        if video_path.startswith("http://") or video_path.startswith("https://"):
+            reconnect_args = ["-reconnect", "1", "-reconnect_at_eof", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"]
+
         cmd = [
             self.ffmpeg,
             "-y",
+            *reconnect_args,
             "-ss", str(timestamp_sec),
             "-i", str(video_path),
             "-vframes", "1",
@@ -96,19 +101,20 @@ class VideoMetadataService:
             str(output_path)
         ]
         try:
-            subprocess.run(cmd, capture_output=True, check=True)
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
             return output_path
         except Exception as e:
             # If timestamp exceeds duration or fails, fallback to frame 0
             fallback_cmd = [
                 self.ffmpeg,
                 "-y",
+                *reconnect_args,
                 "-i", str(video_path),
                 "-vframes", "1",
                 "-q:v", "2",
                 str(output_path)
             ]
-            subprocess.run(fallback_cmd, capture_output=True, check=False)
+            subprocess.run(fallback_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
             return output_path
 
 video_metadata_service = VideoMetadataService()

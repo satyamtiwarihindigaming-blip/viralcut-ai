@@ -88,26 +88,26 @@ async def create_youtube_project(
     if not info.get("valid"):
         raise HTTPException(status_code=400, detail=info.get("message", "Invalid YouTube link"))
 
-    # Download source video stream automatically into storage
-    upload_dir = str(settings.STORAGE_LOCAL_DIR / "uploads")
+    # Live internet stream extraction (instant, no local storage waste)
     import asyncio
     try:
-        download_data = await asyncio.to_thread(
-            youtube_service.download_video, url, upload_dir
+        stream_data = await asyncio.to_thread(
+            youtube_service.get_live_stream_data, url
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to retrieve YouTube video stream: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to access YouTube video stream: {str(e)}")
 
     new_project = Project(
-        title=download_data.get("title", info.get("title", "YouTube Video")),
+        title=stream_data.get("title", info.get("title", "YouTube Video")),
         source_type="youtube",
         source_url=info.get("canonical_url"),
-        file_path=download_data.get("file_path"),
-        file_size_bytes=download_data.get("filesize"),
-        duration=download_data.get("duration"),
-        width=download_data.get("width"),
-        height=download_data.get("height"),
-        fps=download_data.get("fps"),
+        file_path=stream_data.get("stream_url"),
+        file_size_bytes=0,
+        duration=stream_data.get("duration"),
+        width=stream_data.get("width"),
+        height=stream_data.get("height"),
+        fps=stream_data.get("fps"),
+        transcription_data=stream_data.get("transcription_data"),
         custom_prompt=custom_prompt,
         status="uploaded"
     )
@@ -118,7 +118,6 @@ async def create_youtube_project(
     result = await db.execute(
         select(Project).options(selectinload(Project.clips)).where(Project.id == new_project.id)
     )
-    return result.scalar_one()
     return result.scalar_one()
 
 @router.get("", response_model=List[ProjectResponse])
@@ -145,10 +144,11 @@ async def trigger_ai_pipeline(project_id: int, db: AsyncSession = Depends(get_db
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if not project.file_path or not os.path.exists(project.file_path):
+    is_stream = project.file_path and (project.file_path.startswith("http://") or project.file_path.startswith("https://"))
+    if not project.file_path or (not is_stream and not os.path.exists(project.file_path)):
         raise HTTPException(
             status_code=400,
-            detail="Source video file is missing. Please upload the media file to process."
+            detail="Source video is missing. Please provide a valid video link or upload."
         )
 
     project.status = "processing"
