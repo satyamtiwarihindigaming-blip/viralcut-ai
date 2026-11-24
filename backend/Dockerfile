@@ -12,15 +12,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies: FFmpeg, OpenCV, Node.js (for YouTube JS runtime challenge solver)
+# Install system dependencies: FFmpeg, OpenCV, Node.js, Deno, unzip (for YouTube JS runtime challenge solver)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsm6 \
     libxext6 \
     libgl1 \
     curl \
+    unzip \
     nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://deno.land/install.sh | sh
+
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 
 # Install python dependencies
 COPY requirements.txt .

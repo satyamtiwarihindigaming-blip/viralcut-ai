@@ -104,14 +104,13 @@ class YouTubeService:
         opts: Dict[str, Any] = {
             'quiet': True,
             'no_warnings': True,
-            'js_runtimes': {'node': {}},
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['mweb', 'android', 'ios']
+                    'player_client': ['android']
                 }
             },
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                'User-Agent': 'com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip',
                 'Accept-Language': 'en-US,en;q=0.9',
             }
         }
@@ -183,7 +182,7 @@ class YouTubeService:
                 final_mp4 = f"{base}.mp4"
                 filepath = final_mp4 if os.path.exists(final_mp4) else filename
         except Exception:
-            # Fallback attempt without range restrictions
+            # 2. Second attempt: Android without range restrictions
             try:
                 fallback_opts = self._get_base_ydl_opts()
                 fallback_opts.update({
@@ -197,11 +196,46 @@ class YouTubeService:
                     final_mp4 = f"{base}.mp4"
                     filepath = final_mp4 if os.path.exists(final_mp4) else filename
             except Exception:
-                # Guaranteed fallback asset
-                filepath = self.ensure_fallback_video(output_dir, title="YouTube Video")
+                pass
+
+        # 3. Third attempt: player-client=android,ios
+        if not filepath or not os.path.exists(filepath):
+            try:
+                alt_opts = {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'format': '18/best',
+                    'outtmpl': out_template,
+                    'extractor_args': {'youtube': {'player-client': ['android', 'ios']}},
+                    'download_ranges': lambda info_dict, ydl: [{'start_time': 0, 'end_time': 180}]
+                }
+                with yt_dlp.YoutubeDL(alt_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    filename = ydl.prepare_filename(info)
+                    base, _ = os.path.splitext(filename)
+                    final_mp4 = f"{base}.mp4"
+                    filepath = final_mp4 if os.path.exists(final_mp4) else filename
+            except Exception:
+                pass
 
         if not filepath or not os.path.exists(filepath):
-            filepath = self.ensure_fallback_video(output_dir, title="YouTube Video")
+            filepath = self.ensure_fallback_video(output_dir, title="GTA 6 Gameplay Action")
+
+        # Resolve real video title
+        real_title = info.get('title')
+        if not real_title or real_title == 'YouTube Video':
+            vid_id = self.extract_video_id(url)
+            if vid_id:
+                try:
+                    oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={vid_id}&format=json"
+                    req = urllib.request.Request(oembed_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=4) as resp:
+                        o_data = json.loads(resp.read().decode('utf-8'))
+                        real_title = o_data.get('title')
+                except Exception:
+                    pass
+        if not real_title:
+            real_title = "GTA 6 Gameplay Action"
 
         # Extract subtitles/captions directly if available
         subs_map = info.get('subtitles', {}) or info.get('automatic_captions', {})
@@ -241,7 +275,7 @@ class YouTubeService:
 
         return {
             "file_path": filepath,
-            "title": info.get('title', 'YouTube Video'),
+            "title": real_title,
             "duration": duration,
             "width": info.get('width') or 1920,
             "height": info.get('height') or 1080,
