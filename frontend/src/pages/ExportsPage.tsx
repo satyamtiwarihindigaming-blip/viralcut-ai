@@ -196,12 +196,13 @@ export const ExportsPage: React.FC<ExportsPageProps> = ({ onNavigate }) => {
               </button>
             </div>
 
-            <div className="aspect-[9/16] w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+            <div className="aspect-[9/16] w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-white/10 shadow-2xl">
               <video
                 src={getMediaUrl(previewClip.download_url || previewClip.rendered_file_path)}
                 controls
-                autoPlay
-                className="w-full h-full object-cover"
+                playsInline
+                preload="auto"
+                className="w-full h-full object-contain bg-black"
               />
             </div>
 

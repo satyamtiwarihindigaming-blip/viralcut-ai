@@ -71,20 +71,24 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
     }
   };
 
-  const handleValidateYoutube = async () => {
-    if (!youtubeUrl.trim()) return;
+  const handleValidateYoutube = async (overrideUrl?: string) => {
+    const urlToTest = (overrideUrl || youtubeUrl).trim();
+    if (!urlToTest) return;
     try {
       setIsValidatingYt(true);
       setError(null);
-      const res = await projectService.validateYoutube(youtubeUrl);
+      const res = await projectService.validateYoutube(urlToTest);
       if (res.valid) {
         setYoutubeInfo(res);
         if (!title && res.title) setTitle(res.title);
       } else {
-        setError(res.message || 'Invalid YouTube URL');
+        setError(res.message || 'Please provide a valid YouTube URL');
       }
     } catch (e: any) {
-      setError(e.response?.data?.detail || 'Failed to inspect YouTube URL');
+      const msg = typeof e.response?.data?.detail === 'string'
+        ? e.response.data.detail
+        : 'Please enter a valid YouTube link';
+      setError(msg);
     } finally {
       setIsValidatingYt(false);
     }
@@ -216,11 +220,24 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
               type="text"
               placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
               value={youtubeUrl}
-              onChange={(e) => setYoutubeUrl(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setYoutubeUrl(val);
+                if (val.includes('youtu') && val.length > 15) {
+                  handleValidateYoutube(val);
+                }
+              }}
+              onPaste={(e) => {
+                const pasted = e.clipboardData.getData('text');
+                if (pasted) {
+                  setYoutubeUrl(pasted);
+                  handleValidateYoutube(pasted);
+                }
+              }}
               className="flex-1 bg-dark-900 border border-dark-border rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
             />
             <button
-              onClick={handleValidateYoutube}
+              onClick={() => handleValidateYoutube()}
               disabled={isValidatingYt || !youtubeUrl}
               className="px-5 py-3 rounded-xl bg-dark-700 hover:bg-dark-600 disabled:opacity-50 text-white font-medium text-sm border border-dark-border transition-colors flex items-center gap-2"
             >
@@ -228,6 +245,13 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
               <span>Inspect Link</span>
             </button>
           </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {youtubeInfo && (
             <div className="p-4 rounded-xl bg-dark-900/80 border border-emerald-500/30 flex items-center gap-4">

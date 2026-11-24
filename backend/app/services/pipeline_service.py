@@ -78,12 +78,24 @@ class PipelineService:
 
             is_live_stream = video_path.startswith("http://") or video_path.startswith("https://")
             if not video_path or (not is_live_stream and not os.path.exists(video_path)):
-                video_path = youtube_service.ensure_fallback_video(str(settings.STORAGE_LOCAL_DIR / "uploads"))
-                async with AsyncSessionLocal() as session:
-                    p = await session.get(Project, project_id)
-                    if p:
-                        p.file_path = video_path
-                        await session.commit()
+                if project.source_url:
+                    upload_dir = str(settings.STORAGE_LOCAL_DIR / "uploads")
+                    v_res = await asyncio.to_thread(youtube_service.download_or_stream, project.source_url, upload_dir)
+                    video_path = v_res["file_path"]
+                    proj_duration = v_res["duration"]
+                    proj_width = v_res["width"]
+                    proj_height = v_res["height"]
+                    async with AsyncSessionLocal() as session:
+                        p = await session.get(Project, project_id)
+                        if p:
+                            p.file_path = video_path
+                            p.duration = proj_duration
+                            p.width = proj_width
+                            p.height = proj_height
+                            p.fps = v_res["fps"]
+                            await session.commit()
+                else:
+                    raise FileNotFoundError(f"Source video file not found on server: {video_path}")
 
             # 2. Extract Metadata
             await self._update_job(job_id, "Checking Stream Metadata", 15.0)

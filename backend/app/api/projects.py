@@ -88,30 +88,18 @@ async def create_youtube_project(
     if not info.get("valid"):
         raise HTTPException(status_code=400, detail=info.get("message", "Invalid YouTube link"))
 
-    # Direct Video Download with Real Visitor Session & Node.js solver
+    # Direct Video Download with visionOS client
     import asyncio
     upload_dir = str(settings.STORAGE_LOCAL_DIR / "uploads")
     try:
         video_data = await asyncio.to_thread(
             youtube_service.download_or_stream, url, upload_dir
         )
-    except Exception:
-        fallback = youtube_service.ensure_fallback_video(upload_dir)
-        video_data = {
-            "title": info.get("title", "YouTube Video"),
-            "file_path": fallback,
-            "file_size_bytes": os.path.getsize(fallback) if os.path.exists(fallback) else 0,
-            "duration": 30.0,
-            "width": 1920,
-            "height": 1080,
-            "fps": 30.0,
-            "transcription_data": None
-        }
-
-    file_p = video_data.get("file_path")
-    if not file_p or not os.path.exists(file_p):
-        file_p = youtube_service.ensure_fallback_video(upload_dir)
-        video_data["file_path"] = file_p
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unable to process this YouTube link: {str(e)}. Please try another link or upload your video directly."
+        )
 
     new_project = Project(
         title=video_data.get("title", info.get("title", "YouTube Video")),
@@ -162,13 +150,17 @@ async def trigger_ai_pipeline(project_id: int, db: AsyncSession = Depends(get_db
 
     is_stream = project.file_path and (project.file_path.startswith("http://") or project.file_path.startswith("https://"))
     if not project.file_path or (not is_stream and not os.path.exists(project.file_path)):
-        fallback = youtube_service.ensure_fallback_video(str(settings.STORAGE_LOCAL_DIR / "uploads"))
-        project.file_path = fallback
-        project.duration = 30.0
-        project.width = 1920
-        project.height = 1080
-        project.fps = 30.0
-        await db.commit()
+        if project.source_url:
+            upload_dir = str(settings.STORAGE_LOCAL_DIR / "uploads")
+            v_data = await asyncio.to_thread(youtube_service.download_or_stream, project.source_url, upload_dir)
+            project.file_path = v_data["file_path"]
+            project.duration = v_data["duration"]
+            project.width = v_data["width"]
+            project.height = v_data["height"]
+            project.fps = v_data["fps"]
+            await db.commit()
+        else:
+            raise HTTPException(status_code=400, detail="Video media file is missing. Please upload the video again.")
 
     project.status = "processing"
     await db.commit()

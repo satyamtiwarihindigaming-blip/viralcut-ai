@@ -110,12 +110,19 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
     setCaptionStyle((clip.caption_style as CaptionStyle) || 'karaoke');
     setExportRes(clip.export_resolution || '4K');
     setSubtitles(clip.subtitles || []);
-    setCurrentTime(clip.start_time);
+    
+    const isRendered = Boolean(clip.download_url || clip.rendered_file_path);
+    const initialTime = isRendered ? 0 : clip.start_time;
+    setCurrentTime(initialTime);
 
     if (videoRef.current) {
-      videoRef.current.currentTime = clip.start_time;
+      videoRef.current.currentTime = initialTime;
     }
   };
+
+  const isRenderedClip = Boolean(selectedClip?.download_url || selectedClip?.rendered_file_path);
+  const effectiveStart = isRenderedClip ? 0 : startTime;
+  const effectiveEnd = isRenderedClip ? (selectedClip?.duration || 30) : endTime;
 
   const handlePlayPause = () => {
     if (!videoRef.current) return;
@@ -123,10 +130,10 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
-      if (videoRef.current.currentTime >= endTime) {
-        videoRef.current.currentTime = startTime;
+      if (videoRef.current.currentTime >= effectiveEnd || videoRef.current.currentTime < effectiveStart) {
+        videoRef.current.currentTime = effectiveStart;
       }
-      videoRef.current.play();
+      videoRef.current.play().catch(() => {});
       setIsPlaying(true);
     }
   };
@@ -135,7 +142,7 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
     if (!videoRef.current) return;
     const time = videoRef.current.currentTime;
     setCurrentTime(time);
-    if (time >= endTime) {
+    if (time >= effectiveEnd) {
       videoRef.current.pause();
       setIsPlaying(false);
     }
@@ -324,7 +331,9 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
     );
   }
 
-  const rawMedia = selectedClip.download_url || (selectedClip.rendered_file_path ? `/storage/${selectedClip.rendered_file_path.replace(/\\/g, '/').replace(/^storage\//, '')}` : '');
+  const rawMedia = selectedClip.download_url || 
+    (selectedClip.rendered_file_path ? `/storage/${selectedClip.rendered_file_path.replace(/\\/g, '/').replace(/^storage\//, '')}` : '') ||
+    (project?.file_path ? `/storage/${project.file_path.replace(/\\/g, '/').replace(/^storage\//, '')}` : '');
   const videoSourceUrl = getMediaUrl(rawMedia);
 
   return (
@@ -399,7 +408,7 @@ export const VideoEditorPage: React.FC<VideoEditorProps> = ({ clipId, projectId,
               <div 
                 className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-100"
                 style={{ 
-                  width: `${Math.min(100, Math.max(0, ((currentTime - startTime) / Math.max(1, endTime - startTime)) * 100))}%` 
+                  width: `${Math.min(100, Math.max(0, ((currentTime - effectiveStart) / Math.max(1, effectiveEnd - effectiveStart)) * 100))}%` 
                 }}
               />
             </div>
