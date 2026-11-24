@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 from faster_whisper import WhisperModel
 
 class TranscriptionService:
-    def __init__(self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"):
+    def __init__(self, model_size: str = "tiny", device: str = "cpu", compute_type: str = "int8"):
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
@@ -11,12 +11,12 @@ class TranscriptionService:
 
     def _get_model(self) -> WhisperModel:
         if self._model is None:
-            # Load Faster-Whisper model (runs fast on CPU with int8 quantization)
+            # Load lightweight Faster-Whisper model (runs fast on 512MB RAM cloud & local CPU)
             self._model = WhisperModel(
                 self.model_size,
                 device=self.device,
                 compute_type=self.compute_type,
-                cpu_threads=4,
+                cpu_threads=1,
                 num_workers=1
             )
         return self._model
@@ -54,13 +54,12 @@ class TranscriptionService:
             input_media = video_path
 
         try:
-            # Run transcription with word timestamps enabled
+            # Run transcription with word timestamps enabled (vad_filter=False keeps memory <60MB)
             segments_gen, info = model.transcribe(
                 input_media,
                 language=language if language and language != "auto" else None,
                 word_timestamps=True,
-                vad_filter=True, # Voice Activity Detection filters out silence
-                vad_parameters=dict(min_silence_duration_ms=500),
+                vad_filter=False,
                 beam_size=1
             )
         finally:
@@ -96,6 +95,12 @@ class TranscriptionService:
                 "words": words_list
             })
             full_transcript_lines.append(f"[{round(seg.start, 1)}s - {round(seg.end, 1)}s] {clean_text}")
+
+        # Unload Whisper model immediately to free ~150MB RAM before Gemini & FFmpeg start
+        del self._model
+        self._model = None
+        import gc
+        gc.collect()
 
         return {
             "language": detected_language,

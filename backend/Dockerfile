@@ -30,7 +30,8 @@ ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 # Install python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
 
 # Copy application source
 COPY . .
