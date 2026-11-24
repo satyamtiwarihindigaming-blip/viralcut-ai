@@ -62,9 +62,28 @@ class YouTubeService:
             "message": "YouTube link recognized and ready for automatic 4K clipping!"
         }
 
+    def _get_base_ydl_opts(self) -> Dict[str, Any]:
+        opts: Dict[str, Any] = {
+            'quiet': True,
+            'no_warnings': True,
+            'js_runtimes': {'node': {}},
+        }
+        # Check for cookies configuration
+        cookie_path = os.getenv("YOUTUBE_COOKIES_PATH", "/app/cookies.txt")
+        if os.path.exists(cookie_path):
+            opts['cookiefile'] = cookie_path
+        elif os.getenv("YOUTUBE_COOKIES"):
+            cookie_content = os.getenv("YOUTUBE_COOKIES")
+            temp_cookie = os.path.join(os.getcwd(), "storage", "temp", "yt_cookies.txt")
+            os.makedirs(os.path.dirname(temp_cookie), exist_ok=True)
+            with open(temp_cookie, "w", encoding="utf-8") as f:
+                f.write(cookie_content)
+            opts['cookiefile'] = temp_cookie
+        return opts
+
     def download_or_stream(self, url: str, output_dir: str) -> Dict[str, Any]:
         """
-        Bypasses cloud datacenter IP blocks using TV/embedded player clients.
+        Uses Node.js JavaScript runtime to solve YouTube's n challenge.
         Downloads the source video directly to disk for 100% reliable 4K FFmpeg rendering,
         OpenCV face-tracking, and Whisper audio transcription.
         """
@@ -72,17 +91,11 @@ class YouTubeService:
         unique_id = uuid.uuid4().hex[:10]
         out_template = os.path.join(output_dir, f"yt_{unique_id}.%(ext)s")
 
-        ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
+        ydl_opts = self._get_base_ydl_opts()
+        ydl_opts.update({
             'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best',
             'outtmpl': out_template,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['tv_embedded', 'android', 'web']
-                }
-            }
-        }
+        })
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -148,17 +161,11 @@ class YouTubeService:
         """
         Fallback stream inspection when direct download is not required.
         """
-        ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
+        ydl_opts = self._get_base_ydl_opts()
+        ydl_opts.update({
             'skip_download': True,
             'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['tv_embedded', 'android', 'web']
-                }
-            }
-        }
+        })
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)

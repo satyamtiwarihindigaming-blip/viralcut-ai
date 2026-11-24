@@ -142,9 +142,29 @@ export const CreateClipsPage: React.FC<CreateClipsProps> = ({ onNavigate, onJobS
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-3 text-rose-300 text-sm">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 text-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-rose-200">
+              {error.includes("Sign in to confirm") || error.includes("bot")
+                ? "YouTube Cloud Bot Verification Notice"
+                : "Notice"}
+            </p>
+            <p className="text-xs text-rose-300/90 leading-relaxed">
+              {error.includes("Sign in to confirm") || error.includes("bot")
+                ? "YouTube is restricting automated anonymous downloads from cloud datacenter IPs. Please upload your video file directly using the 'Direct Video Upload' tab for instant 4K processing!"
+                : error}
+            </p>
+            {(error.includes("Sign in to confirm") || error.includes("bot")) && (
+              <button
+                type="button"
+                onClick={() => { setActiveTab('upload'); setError(null); }}
+                className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 transition-colors"
+              >
+                Switch to Direct Video Upload →
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -12,13 +12,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies: FFmpeg, libsm6, libxext6 (for OpenCV)
+# Install system dependencies: FFmpeg, OpenCV, Node.js (for YouTube JS runtime challenge solver)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsm6 \
     libxext6 \
     libgl1 \
     curl \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
